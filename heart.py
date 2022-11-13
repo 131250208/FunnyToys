@@ -280,4 +280,9 @@ if __name__ == '__main__':
     wait = int(period_time / frame_num)
     heart = HeartSignal(frame_num=frame_num, seed_points_num=2000, seed_num=5201314, frame_width=720, frame_height=640, scale=10.1)
     heart.draw(wait, heart.heart_function)
+
+    # # 蝴蝶，取消下面两行注释，注释掉上面两行
+    # heart = HeartSignal(frame_num=frame_num, seed_points_num=2000, seed_num=5201314, frame_width=800, frame_height=720,
+    #                     scale=60)
+    # heart.draw(wait, heart.butterfly_function)
     pass
