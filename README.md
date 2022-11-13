@@ -2,6 +2,7 @@
 放一些有趣的code
 
 ## 李峋同款爱心代码（附蝴蝶代码）
+代码是上面的heart.py 有python环境可以直接运行：python heart.py 默认循环跳动10个周期，可以自己修改代码。没有python环境的朋友自己搜一下安装配置教程吧
 参考了B站UP主码农高天的[视频](https://www.bilibili.com/video/BV16g411B7Ff/?spm_id_from=333.880.my_history.page.click&vd_source=ba45c0407ee008ebddccf236e153d82a)
 另外自己做了改进：
 1. 用numpy实现提高效率
