@@ -2,8 +2,8 @@
 放一些有趣的code
 
 ## 李峋同款爱心代码（附蝴蝶代码）
-1. 代码是上面的heart.py 有python环境可以直接运行：python heart.py 默认循环跳动10个周期，可以自己修改代码。没有python环境的朋友自己搜一下安装配置教程吧
-2. 近期会上传一键运行版本（无需安装环境）
+1. 源代码是上面的heart.py 有python环境可以直接运行：python heart.py 默认循环跳动10个周期，可以自己修改代码。没有python环境的朋友自己搜一下安装配置教程吧
+2. heartsignal_oneclick.zip是打包好的exe可执行文件（无需装环境，对小白友好~直接解压双击即可看到李峋同款爱心），右上角绿色按钮可下载，也可访问[百度云盘](https://pan.baidu.com/s/1ngRHAbOQ9J6tkiRXCmW2RA?pwd=6u8a)。
 
 参考了B站UP主码农高天的[视频](https://www.bilibili.com/video/BV16g411B7Ff/?spm_id_from=333.880.my_history.page.click&vd_source=ba45c0407ee008ebddccf236e153d82a)
 另外自己做了改进：
