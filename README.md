@@ -4,7 +4,7 @@
 ## 李峋同款爱心代码（附蝴蝶代码）
 1. 源代码是上面的heart.py 有python环境可以直接运行：python heart.py 默认循环跳动5个周期，可以自己修改代码。没有python环境的朋友自己搜一下安装配置教程吧
 2. 下载完python, 再打开命令行安装3个工具包：`pip install numpy opencv-python pyyaml`, 安装完毕即可正常使用
-2. 一键运行文件已打包好上传[百度云盘](链接：https://pan.baidu.com/s/1jyoka14XncXCYtUwqHWT_Q?pwd=4whe)（无需装环境，对小白友好~直接解压双击运行即可）
+2. 一键运行文件已打包好上传[百度云盘](https://pan.baidu.com/s/1jyoka14XncXCYtUwqHWT_Q?pwd=4whe)（无需装环境，对小白友好~直接解压双击运行即可）
 
 ## 一键版使用说明
 1. 双击heart.exe运行
