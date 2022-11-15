@@ -2,15 +2,15 @@
 # 设置高光时，尽量选择接近主色的颜色，看起来会和谐一点
 
 # 视频里的蓝色调
-#base_color:
-#  - 288
+#base_color: # 主色  默认玫瑰粉
+#  - 30
 #  - 100
 #  - 100
-#highlight_points_color_1:
+#highlight_points_color_1: # 高光粒子色1 默认淡紫色
 #  - 150
 #  - 120
 #  - 220
-#highlight_points_color_2:
+#highlight_points_color_2: # 高光粒子色2 默认淡粉色
 #  - 128
 #  - 140
 #  - 140
