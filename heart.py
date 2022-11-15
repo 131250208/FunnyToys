@@ -1,25 +1,100 @@
 from math import cos, pi
 import numpy as np
 import cv2
+import os, glob
 
 
 class HeartSignal:
-    def __init__(self, frame_num=20, seed_points_num=2000, seed_num=None, frame_width=1080, frame_height=960, scale=10.1):
+    def __init__(self, curve="heart", title="Love U", frame_num=20, seed_points_num=2000, seed_num=None, highlight_rate=0.3,
+                 background_img_dir="", set_bg_imgs=False, bg_img_scale=0.2, bg_weight=0.3, curve_weight=0.7, frame_width=1080, frame_height=960, scale=10.1,
+                 base_color=None, highlight_points_color_1=None, highlight_points_color_2=None, wait=100, n_star=5, m_star=2):
         super().__init__()
-        self.frame_width = frame_width
-        self.frame_height = frame_height
+        self.curve = curve
+        self.title = title
+        self.highlight_points_color_2 = highlight_points_color_2
+        self.highlight_points_color_1 = highlight_points_color_1
+        self.highlight_rate = highlight_rate
+        self.base_color = base_color
+        self.n_star = n_star
+        self.m_star = m_star
+        self.curve_weight = curve_weight
+        img_paths = glob.glob(background_img_dir + "/*")
+        self.bg_imgs = []
+        self.set_bg_imgs = set_bg_imgs
+        self.bg_weight = bg_weight
+        if os.path.exists(background_img_dir) and len(img_paths) > 0 and set_bg_imgs:
+            for img_path in img_paths:
+                img = cv2.imread(img_path)
+                self.bg_imgs.append(img)
+            first_bg = self.bg_imgs[0]
+            width = int(first_bg.shape[1] * bg_img_scale)
+            height = int(first_bg.shape[0] * bg_img_scale)
+            first_bg = cv2.resize(first_bg, (width, height), interpolation=cv2.INTER_AREA)
+
+            # 对齐图片，自动裁切中间
+            new_bg_imgs = [first_bg, ]
+            for img in self.bg_imgs[1:]:
+                width_close = abs(first_bg.shape[1] - img.shape[1]) < abs(first_bg.shape[0] - img.shape[0])
+                if width_close:
+                    # resize
+                    height = int(first_bg.shape[1] / img.shape[1] * img.shape[0])
+                    width = first_bg.shape[1]
+                    img = cv2.resize(img, (width, height), interpolation=cv2.INTER_AREA)
+                    # crop and fill
+                    if img.shape[0] > first_bg.shape[0]:
+                        crop_num = img.shape[0] - first_bg.shape[0]
+                        crop_top = crop_num // 2
+                        crop_bottom = crop_num - crop_top
+                        img = np.delete(img, range(crop_top), axis=0)
+                        img = np.delete(img, range(img.shape[0] - crop_bottom, img.shape[0]), axis=0)
+                    elif img.shape[0] < first_bg.shape[0]:
+                        fill_num = first_bg.shape[0] - img.shape[0]
+                        fill_top = fill_num // 2
+                        fill_bottom = fill_num - fill_top
+                        img = np.concatenate([np.zeros([fill_top, width, 3]), img, np.zeros([fill_bottom, width, 3])], axis=0)
+                else:
+                    width = int(first_bg.shape[0] / img.shape[0] * img.shape[1])
+                    height = first_bg.shape[0]
+                    img = cv2.resize(img, (width, height), interpolation=cv2.INTER_AREA)
+                    # crop and fill
+                    if img.shape[1] > first_bg.shape[1]:
+                        crop_num = img.shape[1] - first_bg.shape[1]
+                        crop_top = crop_num // 2
+                        crop_bottom = crop_num - crop_top
+                        img = np.delete(img, range(crop_top), axis=1)
+                        img = np.delete(img, range(img.shape[1] - crop_bottom, img.shape[1]), axis=1)
+                    elif img.shape[1] < first_bg.shape[1]:
+                        fill_num = first_bg.shape[1] - img.shape[1]
+                        fill_top = fill_num // 2
+                        fill_bottom = fill_num - fill_top
+                        img = np.concatenate([np.zeros([fill_top, width, 3]), img, np.zeros([fill_bottom, width, 3])], axis=1)
+                new_bg_imgs.append(img)
+            self.bg_imgs = new_bg_imgs
+            assert all(img.shape[0] == first_bg.shape[0] and img.shape[1] == first_bg.shape[1] for img in self.bg_imgs), "背景图片宽和高不一致"
+            self.frame_width = self.bg_imgs[0].shape[1]
+            self.frame_height = self.bg_imgs[0].shape[0]
+        else:
+            self.frame_width = frame_width  # 窗口宽度
+            self.frame_height = frame_height  # 窗口高度
         self.center_x = self.frame_width / 2
         self.center_y = self.frame_height / 2
+        self.main_curve_width = -1
+        self.main_curve_height = -1
 
-        self._points = set()  # 主图坐标点
-        self._edge_diffusion_points = set()  # 边缘扩散效果点坐标集合
-        self._center_diffusion_points = set()  # 中心扩散效果点坐标集合
-        self._heart_halo_point = set()  # 光晕效果坐标集合
         self.frame_points = []  # 每帧动态点坐标
-        self.frame_num = frame_num
-        self.seed_num = seed_num
-        self.seed_points_num = seed_points_num
-        self.scale = scale
+        self.frame_num = frame_num  # 帧数
+        self.seed_num = seed_num  # 伪随机种子，设置以后除光晕外粒子相对位置不动（减少内部闪烁感）
+        self.seed_points_num = seed_points_num  # 主图粒子数
+        self.scale = scale  # 缩放比例
+        self.wait = wait
+
+    def curve_function(self, curve):
+        curve_dict = {
+            "heart": self.heart_function,
+            "butterfly": self.butterfly_function,
+            "star": self.star_function,
+        }
+        return curve_dict[curve]
 
     def heart_function(self, t, frame_idx=0, scale=5.20):
         """
@@ -29,8 +104,7 @@ class HeartSignal:
         :param t: 参数
         :return: 坐标
         """
-        trans = 3
-        trans = 3 - (1 + self.curve(frame_idx, self.frame_num)) * 0.5  # 改变心形饱满度度的参数
+        trans = 3 - (1 + self.periodic_func(frame_idx, self.frame_num)) * 0.5  # 改变心形饱满度度的参数
 
         x = 15 * (np.sin(t) ** 3)
         t = np.where((pi < t) & (t < 2 * pi), 2 * pi - t, t)  # 翻转x > 0部分的图形到3、4象限
@@ -49,13 +123,12 @@ class HeartSignal:
         x += self.center_x
         y += self.center_y
 
-
         # 原心形方程
         # x = 15 * (sin(t) ** 3)
         # y = -(14 * cos(t) - 4 * cos(2 * t) - 2 * cos(3 * t) - cos(3 * t))
         return x.astype(int), y.astype(int)
 
-    def butterfly_function(self, t, frame_idx=0, scale=64):
+    def butterfly_function(self, t, frame_idx=0, scale=5.2):
         """
         图形函数
         :param frame_idx:
@@ -64,12 +137,27 @@ class HeartSignal:
         :return: 坐标
         """
         # 基础函数
-        # x = 15 * (sin(t) ** 3)
-        # y = -(14 * cos(t) - 4 * cos(2 * t) - 2 * cos(3 * t) - cos(3 * t))
-        t = t * pi
+        # t = t * pi
         p = np.exp(np.sin(t)) - 2.5 * np.cos(4 * t) + np.sin(t) ** 5
-        x = p * np.cos(t)
-        y = - p * np.sin(t)
+        x = 5 * p * np.cos(t)
+        y = - 5 * p * np.sin(t)
+
+        # 放大
+        x *= scale
+        y *= scale
+
+        # 移到画布中央
+        x += self.center_x
+        y += self.center_y
+
+        return x.astype(int), y.astype(int)
+
+    def star_function(self, t, frame_idx=0, scale=5.2):
+        n = self.n_star / self.m_star
+        p = np.cos(pi / n) / np.cos(pi / n - (t % (2 * pi / n)))
+
+        x = 15 * p * np.cos(t)
+        y = 15 * p * np.sin(t)
 
         # 放大
         x *= scale
@@ -125,7 +213,7 @@ class HeartSignal:
 
         return x - dx, y - dy
 
-    def curve(self, x, x_num):
+    def periodic_func(self, x, x_num):
         """
         跳动周期曲线
         :param p: 参数
@@ -141,13 +229,17 @@ class HeartSignal:
 
     def gen_points(self, points_num, frame_idx, shape_func):
         # 用周期函数计算得到一个因子，用到所有组成部件上，使得各个部分的变化周期一致
-        cy = self.curve(frame_idx, self.frame_num)
+        cy = self.periodic_func(frame_idx, self.frame_num)
         ratio = 10 * cy
 
         # 图形
-        seed_points = np.linspace(0, 2 * pi, points_num)
+        period = 2 * pi * self.m_star if self.curve == "star" else 2 * pi
+        seed_points = np.linspace(0, period, points_num)
         seed_x, seed_y = shape_func(seed_points, frame_idx, scale=self.scale)
         x, y = self.shrink(seed_x, seed_y, ratio, offset=2)
+        curve_width, curve_height = int(x.max() - x.min()), int(y.max() - y.min())
+        self.main_curve_width = max(self.main_curve_width, curve_width)
+        self.main_curve_height = max(self.main_curve_height, curve_height)
         point_size = np.random.choice([1, 2], x.shape, replace=True, p=[0.5, 0.5])
         tag = np.ones_like(x)
 
@@ -210,52 +302,45 @@ class HeartSignal:
         return x, y, point_size, tag
 
     def get_frames(self, shape_func):
-        for frame_idx in range(frame_num):
+        for frame_idx in range(self.frame_num):
             np.random.seed(self.seed_num)
             self.frame_points.append(self.gen_points(self.seed_points_num, frame_idx, shape_func))
 
         frames = []
 
         def add_points(frame, x, y, size, tag):
-            # white = np.array([255, 255, 255], dtype='uint8')
-            # dark_red = np.array([250, 90, 90], dtype='uint8')
-            purple = np.array([180, 87, 200], dtype='uint8')  # 180, 87, 200
-            light_pink = np.array([228, 140, 140], dtype='uint8')   # [228, 140, 140]
-            rose_pink = np.array([228, 100, 100], dtype='uint8')
+            highlight1 = np.array(self.highlight_points_color_1, dtype='uint8')
+            highlight2 = np.array(self.highlight_points_color_2, dtype='uint8')
+            base_col = np.array(self.base_color, dtype='uint8')
 
             x, y = x.astype(int), y.astype(int)
-            frame[y, x] = rose_pink
+            frame[y, x] = base_col
 
             size_2 = np.int64(size == 2)
-            frame[y, x + size_2] = rose_pink
-            frame[y + size_2, x] = rose_pink
+            frame[y, x + size_2] = base_col
+            frame[y + size_2, x] = base_col
 
             size_3 = np.int64(size == 3)
-            frame[y + size_3, x] = rose_pink
-            frame[y - size_3, x] = rose_pink
-            frame[y, x + size_3] = rose_pink
-            frame[y, x - size_3] = rose_pink
-            frame[y + size_3, x + size_3] = rose_pink
-            frame[y - size_3, x - size_3] = rose_pink
+            frame[y + size_3, x] = base_col
+            frame[y - size_3, x] = base_col
+            frame[y, x + size_3] = base_col
+            frame[y, x - size_3] = base_col
+            frame[y + size_3, x + size_3] = base_col
+            frame[y - size_3, x - size_3] = base_col
             # frame[y - size_3, x + size_3] = color
             # frame[y + size_3, x - size_3] = color
 
             # 高光
-            random_sample = np.random.choice([1, 0], size=tag.shape, p=[0.3, 0.7])
+            random_sample = np.random.choice([1, 0], size=tag.shape, p=[self.highlight_rate, 1 - self.highlight_rate])
 
             # tag2_size1 = np.int64((tag <= 2) & (size == 1) & (random_sample == 1))
-            # frame[y * tag2_size1, x * tag2_size1] = light_pink
+            # frame[y * tag2_size1, x * tag2_size1] = highlight2
 
             tag2_size2 = np.int64((tag <= 2) & (size == 2) & (random_sample == 1))
-            frame[y * tag2_size2, x * tag2_size2] = purple
-            # frame[y * tag2_size2, (x + 1) * tag2_size2] = light_pink
-            # frame[(y + 1) * tag2_size2, x * tag2_size2] = light_pink
-            frame[(y + 1) * tag2_size2, (x + 1) * tag2_size2] = light_pink
-
-            # frame[y * tag2_size2, x * tag2_size2] = light_pink
-            # frame[y, x + tag2_size2] = light_pink
-            # frame[y + tag2_size2, x] = light_pink
-            # frame[y + tag2_size2, x + tag2_size2] = light_pink
+            frame[y * tag2_size2, x * tag2_size2] = highlight1
+            # frame[y * tag2_size2, (x + 1) * tag2_size2] = highlight2
+            # frame[(y + 1) * tag2_size2, x * tag2_size2] = highlight2
+            frame[(y + 1) * tag2_size2, (x + 1) * tag2_size2] = highlight2
 
         for x, y, size, tag in self.frame_points:
             frame = np.zeros([self.frame_height, self.frame_width, 3], dtype="uint8")
@@ -264,25 +349,25 @@ class HeartSignal:
 
         return frames
 
-    def draw(self, wait, shape_func):
-        frames = self.get_frames(shape_func)
-        while True:
+    def draw(self, times=10):
+        frames = self.get_frames(self.curve_function(self.curve))
+
+        for i in range(times):
             for frame in frames:
-                show_frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-                show_frame = cv2.resize(show_frame, (self.frame_width, self.frame_height))
-                cv2.imshow("Love U", show_frame)
-                cv2.waitKey(wait)
+                frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                if len(self.bg_imgs) > 0 and self.set_bg_imgs:
+                    frame = cv2.addWeighted(self.bg_imgs[i % len(self.bg_imgs)], self.bg_weight, frame, self.curve_weight, 0)
+                cv2.imshow(self.title, frame)
+                cv2.waitKey(self.wait)
 
 
 if __name__ == '__main__':
-    period_time = 1000 * 1.5  # 1.5s一个周期
-    frame_num = 30
-    wait = int(period_time / frame_num)
-    heart = HeartSignal(frame_num=frame_num, seed_points_num=2000, seed_num=5201314, frame_width=720, frame_height=640, scale=10.1)
-    heart.draw(wait, heart.heart_function)
-
-    # # 蝴蝶，取消下面两行注释，注释掉上面两行
-    # heart = HeartSignal(frame_num=frame_num, seed_points_num=2000, seed_num=5201314, frame_width=800, frame_height=720,
-    #                     scale=60)
-    # heart.draw(wait, heart.butterfly_function)
-    pass
+    import yaml
+    settings = yaml.load(open("./settings.yaml", "r", encoding="utf-8"), Loader=yaml.FullLoader)
+    if settings["wait"] == -1:
+        settings["wait"] = int(settings["period_time"] / settings["frame_num"])
+    del settings["period_time"]
+    times = settings["times"]
+    del settings["times"]
+    heart = HeartSignal(seed_num=5201314, **settings)
+    heart.draw(times)
