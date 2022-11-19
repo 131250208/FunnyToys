@@ -7,7 +7,7 @@ import os, glob
 class HeartSignal:
     def __init__(self, curve="heart", title="Love U", frame_num=20, seed_points_num=2000, seed_num=None, highlight_rate=0.3,
                  background_img_dir="", set_bg_imgs=False, bg_img_scale=0.2, bg_weight=0.3, curve_weight=0.7, frame_width=1080, frame_height=960, scale=10.1,
-                 base_color=None, highlight_points_color_1=None, highlight_points_color_2=None, wait=100, n_star=5, m_star=2):
+                 base_color=None, highlight_points_color_1=None, highlight_points_color_2=None, wait=100):
         super().__init__()
         self.curve = curve
         self.title = title
@@ -15,8 +15,11 @@ class HeartSignal:
         self.highlight_points_color_1 = highlight_points_color_1
         self.highlight_rate = highlight_rate
         self.base_color = base_color
-        self.n_star = n_star
-        self.m_star = m_star
+        self.m_star, self.n_star = None, None
+        star_curve = {"star-5": (5, 2), "star-6": (6, 2), "star-7": (7, 3), "star-7-1": (7, 3), "star-7-2": (7, 2)}
+        if "star" in curve:
+            self.n_star, self.m_star = star_curve[curve]
+
         self.curve_weight = curve_weight
         img_paths = glob.glob(background_img_dir + "/*")
         self.bg_imgs = []
@@ -89,10 +92,11 @@ class HeartSignal:
         self.wait = wait
 
     def curve_function(self, curve):
+        if "star" in curve:
+            return self.star_function
         curve_dict = {
             "heart": self.heart_function,
             "butterfly": self.butterfly_function,
-            "star": self.star_function,
         }
         return curve_dict[curve]
 
@@ -152,12 +156,33 @@ class HeartSignal:
 
         return x.astype(int), y.astype(int)
 
+    # def star_function(self, t, frame_idx=0, scale=5.2):
+    #     n = self.n_star / self.m_star
+    #     p = np.cos(pi / n) / np.cos(pi / n - (t % (2 * pi / n)))
+    #
+    #     x = 15 * p * np.cos(t)
+    #     y = 15 * p * np.sin(t)
+    #
+    #     # 放大
+    #     x *= scale
+    #     y *= scale
+    #
+    #     # 移到画布中央
+    #     x += self.center_x
+    #     y += self.center_y
+    #
+    #     return x.astype(int), y.astype(int)
+
     def star_function(self, t, frame_idx=0, scale=5.2):
         n = self.n_star / self.m_star
         p = np.cos(pi / n) / np.cos(pi / n - (t % (2 * pi / n)))
 
-        x = 15 * p * np.cos(t)
-        y = 15 * p * np.sin(t)
+        y = - 15 * p * np.cos(t)
+        x = 15 * p * np.sin(t)
+
+        if self.m_star > 1 and self.n_star % self.m_star == 0:
+            x = np.concatenate([x, x], axis=0)
+            y = np.concatenate([y, -y], axis=0)
 
         # 放大
         x *= scale
@@ -233,7 +258,7 @@ class HeartSignal:
         ratio = 10 * cy
 
         # 图形
-        period = 2 * pi * self.m_star if self.curve == "star" else 2 * pi
+        period = 2 * pi * self.m_star if "star" in self.curve else 2 * pi
         seed_points = np.linspace(0, period, points_num)
         seed_x, seed_y = shape_func(seed_points, frame_idx, scale=self.scale)
         x, y = self.shrink(seed_x, seed_y, ratio, offset=2)
