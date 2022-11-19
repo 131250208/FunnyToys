@@ -1,32 +1,32 @@
 # 颜色：RGB三原色数值 0~255
 # 设置高光时，尽量选择接近主色的颜色，看起来会和谐一点
 
-# 视频里的蓝色调
+## 视频里的蓝色调
+#base_color: # 主色
+#  - 30
+#  - 100
+#  - 100
+#highlight_points_color_1: # 高光粒子色1
+#  - 150
+#  - 120
+#  - 220
+#highlight_points_color_2: # 高光粒子色2
+#  - 128
+#  - 140
+#  - 140
+
 base_color: # 主色  默认玫瑰粉
-  - 30
+  - 228
   - 100
   - 100
 highlight_points_color_1: # 高光粒子色1 默认淡紫色
-  - 150
-  - 120
-  - 220
+  - 180
+  - 87
+  - 200
 highlight_points_color_2: # 高光粒子色2 默认淡粉色
-  - 128
+  - 228
   - 140
   - 140
-
-#base_color: # 主色  默认玫瑰粉
-#  - 228
-#  - 100
-#  - 100
-#highlight_points_color_1: # 高光粒子色1 默认淡紫色
-#  - 180
-#  - 87
-#  - 200
-#highlight_points_color_2: # 高光粒子色2 默认淡粉色
-#  - 228
-#  - 140
-#  - 140
 
 period_time: 1000 * 2  # 周期时间，默认1.5s一个周期
 times: 25 # 播放周期数，一个周期跳动1次
@@ -40,7 +40,7 @@ scale: 9.1  # 主图缩放比例
 curve: "heart"  # 图案类型：heart, butterfly, star-5, star-6, star-7-1, star-7-2
 title: "Love Li Xun"  # 仅支持字母，中文乱码
 background_img_dir: "src/center_imgs" # 这个目录放置背景图片，建议像素在400 X 400以上，否则可能报错，如果图片实在小，可以调整上面scale把爱心缩小
-set_bg_imgs: true # true或false，设置false用默认黑背景
+set_bg_imgs: false # true或false，设置false用默认黑背景
 bg_img_scale: 0.6 # 0 - 1，背景图片缩放比例
 bg_weight: 0.4 # 0 - 1，背景图片权重，可看做透明度吧
 curve_weight: 1 # 同上
