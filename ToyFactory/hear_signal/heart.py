@@ -156,23 +156,6 @@ class HeartSignal:
 
         return x.astype(int), y.astype(int)
 
-    # def star_function(self, t, frame_idx=0, scale=5.2):
-    #     n = self.n_star / self.m_star
-    #     p = np.cos(pi / n) / np.cos(pi / n - (t % (2 * pi / n)))
-    #
-    #     x = 15 * p * np.cos(t)
-    #     y = 15 * p * np.sin(t)
-    #
-    #     # 放大
-    #     x *= scale
-    #     y *= scale
-    #
-    #     # 移到画布中央
-    #     x += self.center_x
-    #     y += self.center_y
-    #
-    #     return x.astype(int), y.astype(int)
-
     def star_function(self, t, frame_idx=0, scale=5.2):
         n = self.n_star / self.m_star
         p = np.cos(pi / n) / np.cos(pi / n - (t % (2 * pi / n)))
