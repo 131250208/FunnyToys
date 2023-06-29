@@ -1,0 +1,56 @@
+# 颜色：RGB三原色数值 0~255
+# 设置高光时，尽量选择接近主色的颜色，看起来会和谐一点
+
+## 视频里的蓝色调
+#base_color: # 主色
+#  - 30
+#  - 100
+#  - 100
+#highlight_points_color_1: # 高光粒子色1
+#  - 150
+#  - 120
+#  - 220
+#highlight_points_color_2: # 高光粒子色2
+#  - 128
+#  - 140
+#  - 140
+
+base_color: # 主色  默认玫瑰粉
+  - 228
+  - 100
+  - 100
+highlight_points_color_1: # 高光粒子色1 默认淡紫色
+  - 180
+  - 87
+  - 200
+highlight_points_color_2: # 高光粒子色2 默认淡粉色
+  - 228
+  - 140
+  - 140
+
+period_time: 1000 * 2  # 周期时间，默认1.5s一个周期
+times: 25 # 播放周期数，一个周期跳动1次
+frame_num: 24  # 一个周期的生成帧数
+wait: 60  # 每一帧停留时间, 设置太短可能造成闪屏，设置 -1 自动设置为 period_time / frame_num
+seed_points_num: 2000  # 构成主图的种子粒子数，总粒子数是这个的8倍左右（包括散点和光晕）
+highlight_rate: 0.2 # 高光粒子的比例
+frame_width: 720  # 窗口宽度，单位像素，设置背景图片后失效
+frame_height: 640  # 窗口高度，单位像素，设置背景图片后失效
+scale: 9.1  # 主图缩放比例
+curve: "heart"  # 图案类型：heart, butterfly, star-5, star-6, star-7-1, star-7-2
+title: "Love Li Xun"  # 仅支持字母，中文乱码
+background_img_dir: "src/center_imgs" # 这个目录放置背景图片，建议像素在400 X 400以上，否则可能报错，如果图片实在小，可以调整上面scale把爱心缩小
+set_bg_imgs: false # true或false，设置false用默认黑背景
+bg_img_scale: 0.6 # 0 - 1，背景图片缩放比例
+bg_weight: 0.4 # 0 - 1，背景图片权重，可看做透明度吧
+curve_weight: 1 # 同上
+
+# ======================== 推荐参数: 直接复制数值替换上面对应参数 ==================================
+# 蝴蝶，报错很可能是蝴蝶缩放大小超出窗口宽和高
+# curve: "butterfly"
+# frame_width: 800
+# frame_height: 720
+# scale: 60
+# base_color: [100, 100, 228]
+# highlight_points_color_1: [180, 87, 200]
+# highlight_points_color_2: [228, 140, 140]
