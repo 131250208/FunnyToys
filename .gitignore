@@ -1,8 +1,8 @@
 *.json
 *.pt
 *.emb
-CasRel/
 *config*
+**/src/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

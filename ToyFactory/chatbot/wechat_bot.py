@@ -57,7 +57,7 @@ class WeChatBot():
         res_json = response.json()
         if res_json["code"] == "1000":
             self.wid = res_json["data"]["wId"]
-            if self.download_and_open_image(res_json["data"]["qrCodeUrl"], "/root/project/chatbot/src/qrCodeUrl.jpg"):
+            if self.download_and_open_image(res_json["data"]["qrCodeUrl"], QRCODE_PATH):
                 return True
             else:
                 return False
@@ -175,7 +175,10 @@ class WeChatBot():
 
 def listen_and_rpl():
     rsm_app = Flask(__name__)
-    system_content = "你要进行日常聊天，不要回复太长的话，不要用书面化语言，请用日常口语化的表达，不要说你是AI语言模型、小助手或者机器人，不是一个真实的人类，你的任务是扮演一个普通人类进行聊天"
+    system_content = "请你（assistant）扮演一个名叫王雨城的25岁中国男生（AI算法工程师，现居住上海），\
+    请用地道的中文口语表达进行日常聊天，回复尽量简短而精确，只回复1-2句话。不要提及你是AI语言模型、小助手或者机器人。\
+    和你聊天的user都是熟悉的朋友，态度不能太陌生和冷淡，也不要出现“抱歉”、“对不起”或“谢谢”等客气的表达。\
+    聊天过程中要从user的信息中挖掘聊天话题，并在user的内容比较空洞或信息量少时主动抛出与上文相关的其他话题"
     chat_agent = ChatBot(system_content, max_round=10)
     
     call_back_url = "http://124.71.45.196:5000/api/get_msg"
@@ -192,19 +195,33 @@ def listen_and_rpl():
     @rsm_app.route('/api/get_msg', methods=['POST'])
     def process_post_request():
         data = request.get_json()  # 获取POST请求中的JSON数据
+        # pprint(data)
         if data["messageType"] == "60001":
-            send_txt = data["data"]["content"]
+            content = data["data"]["content"]
             fromUser_wcid = data["data"]["fromUser"]
-            pprint(data)
+            toUser_wcid = data["data"]["toUser"]
+            
             # 调用chatgpt回复
-            if not data["data"]["self"] and BOT_KEYWORD in send_txt:
-                send_txt = re.sub(BOT_KEYWORD, "", send_txt)
-                res = chat_agent.user_send(send_txt)
-                if res is not None:
-                    rpl, toks_num = res
+            if not data["data"]["self"]: # 如果不是自己的消息
+                if BOT_KEYWORD in content:
+                    pass
                 else:
-                    rpl = "请求失败了，请稍后再试..."
-                bot.sent_text(fromUser_wcid, rpl)
+                    content = re.sub(BOT_KEYWORD, "", content)
+                    res = chat_agent.user_send(content, key=fromUser_wcid)
+                    if res is not None:
+                        rpl, toks_num = res
+                    else:
+                        rpl = "请求失败了，请稍后再试..."
+                    bot.sent_text(fromUser_wcid, rpl)
+            else: # 如果是自己发的消息，把信息加入到【对方】的历史消息里
+                if COMMAND_KEY in content:
+                    if "CML:set_system:" in content:
+                        new_sys = content.split(":")[-1]
+                        chat_agent.set_system_content(new_sys, key=toUser_wcid)
+                    elif "CML:clear_msgs" in content:
+                        chat_agent.clear_chat_history(key=toUser_wcid)
+                else:
+                    chat_agent.add_msg(role="assistant", content=content, key=toUser_wcid)
         return data
     
     rsm_app.run(host='0.0.0.0', port=5000)

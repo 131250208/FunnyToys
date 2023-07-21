@@ -1,9 +1,11 @@
 import requests
 import json
 from src.config4chatbot import *
+from pprint import pprint
 
 
 class ChatBot:
+    DEFAULT = "default"
     def __init__(self, system_content, max_round):
         self.my_proxies = {
             "http": "http://127.0.0.1:7890",
@@ -17,29 +19,44 @@ class ChatBot:
 
         self.system_content = system_content
         self.max_round = max_round
-        self.messages = []
-        self.messages.append({"role": "system", "content": self.system_content})
+        self.msg_dict = dict()
 
-    def set_system_content(self, content):
-        self.messages[0] = {"role": "system", "content": content}
+    def get_msg_list(self, key=DEFAULT):
+        msg_list = self.msg_dict.setdefault(key, [])
+        if len(msg_list) == 0:
+            msg_list.append({"role": "system", "content": self.system_content})
+        return msg_list
+
+    def set_system_content(self, content, key=DEFAULT):
+        msg_list = self.get_msg_list(key)
+        msg_list[0] = {"role": "system", "content": content}
     
-    def clear_chat_history(self):
-        del self.messages[1:]
+    def clear_chat_history(self, key=DEFAULT):
+        msg_list = self.get_msg_list(key)
+        del msg_list[1:]
+        return msg_list
 
-    def load_chat_history(self, history):
+    def load_chat_history(self, history, key=DEFAULT):
         '''
         history: a list of chat content
         {"role": "user", "content": message}  # 用户信息
         {"role": "assistant", "content": message}  # chatbot的回复信息
         '''
-        self.clear_chat_history()
-        self.messages.extend(history)
+        msg_list = self.clear_chat_history(key)
+        msg_list.extend(history)
 
-    def user_send(self, user_content, rpl_model="gpt-3.5-turbo"):
-        self.messages.append({"role": "user", "content": user_content})
+    def get_chat_history(self, key=DEFAULT):
+        return self.get_msg_list(key)[1:]
+    
+    def add_msg(self, content, role, key=DEFAULT):
+        self.get_msg_list(key).append({"role": role, "content": content})
+
+    def user_send(self, user_content, rpl_model="gpt-3.5-turbo", key=DEFAULT):
+        msg_list = self.get_msg_list(key)
+        msg_list.append({"role": "user", "content": user_content})
         data = {
             "model": rpl_model,
-            "messages": self.messages,
+            "messages": msg_list,
             "temperature": 0.7
         }
 
@@ -52,23 +69,16 @@ class ChatBot:
             response = response.json()
             message = response["choices"][0]["message"]["content"]
             num_of_tokens = response['usage']['total_tokens']
-            self.messages.append({"role": "assistant", "content": message})
+            msg_list.append({"role": "assistant", "content": message})
+            print("============ msg_list ==================")
+            pprint(msg_list)
             
-            if len(self.messages) > self.max_round * 2 + 1:
-                del self.messages[1:3]
+            if len(msg_list) > self.max_round * 2 + 1:
+                del msg_list[1:3]
             return message, num_of_tokens
         else:
             print(f"Request failed with status code {response.status_code}")
             return None
 
 if __name__ == "__main__":
-    # # system_content = "You are a Chinese high school student, reply in oral Chinese and do not speak long sentences. Play like a real person but not a bot. Reply in Chinese!"
-    # system_content = "你是一个性感热辣、热情奔放的20岁女孩，现在请你和一个19岁高中生对话，你的目的是让他喜欢上你，而且记住，你是专业的PUA，不能轻易让他得到你，\
-    # 但是要让他对你欲罢不能，深深地爱上你，接下来他会给你发消息，请记住不要一次性说太多话，回答得像日常口语，不要用书面化语言，也不要说你是AI、小助手或者机器人，你的身份就是一个20岁白人女孩"
-    # bot = ChatBot(system_content, max_round=10)
-    
-    # for i in range(20):
-    #     inpt = input("user:")
-    #     rpl, toks = bot.user_send(inpt)
-    #     print("({} tokens) bot: {}".format(toks, rpl))
     pass
