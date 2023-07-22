@@ -104,19 +104,23 @@ print(len(chat_data))
 
 # 连接到 MongoDB
 with client:
-    for item in chat_data:
-        left_wcid = item["left_wcid"]
-        right_wcid = item["right_wcid"]
-        # if item["left_name"] == "冯琳": # wxid_55hlyad2yypj11
-        #     import pdb; pdb.set_trace()
-        # 指定要使用的数据库和集合
-        database = client['wechat']
-        collection = database['chat_history']
-        # 插入数据
-        left_right = {"left_wcid": left_wcid, "right_wcid": right_wcid}
-        count = collection.count_documents(left_right)
-        if count == 0:
-            collection.insert_one(item)
-            print(f"{item['left_name']} is not in database and inserted just now.")
-        else:
-            print(f"{item['left_name']} is already in database.")
+    # 指定要使用的数据库和集合
+    database = client['wechat']
+    collection = database['chat_history']
+    # 插入数据
+    res = collection.insert_many(chat_data)
+    print(f"inserted {len(res.inserted_ids)} records.")
+
+    # for item in chat_data:
+    #     left_wcid = item["left_wcid"]
+    #     right_wcid = item["right_wcid"]
+    #     # if item["left_name"] == "冯琳": # wxid_55hlyad2yypj11
+    #     #     import pdb; pdb.set_trace()
+    #     # 插入数据
+    #     left_right = {"left_wcid": left_wcid, "right_wcid": right_wcid}
+    #     count = collection.count_documents(left_right)
+    #     if count == 0:
+    #         collection.insert_one(item)
+    #         print(f"{item['left_name']} is not in database and inserted just now.")
+    #     else:
+    #         print(f"{item['left_name']} is already in database.")
